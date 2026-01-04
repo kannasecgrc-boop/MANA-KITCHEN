@@ -6,7 +6,8 @@ import { Product, ChatMessage } from "../types";
 export const getShoppingAdvice = async (
   query: string,
   products: Product[],
-  history: ChatMessage[]
+  history: ChatMessage[],
+  userOrders: any[] = []
 ): Promise<string> => {
   if (!process.env.API_KEY) {
     return "I'm sorry, I cannot help right now as the AI service is not configured.";
@@ -14,6 +15,11 @@ export const getShoppingAdvice = async (
 
   // Always use a named parameter for apiKey and use process.env.API_KEY directly
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+  // Format order history for the AI context
+  const orderContext = userOrders.length > 0 
+    ? `The user has previously ordered these items: ${JSON.stringify(userOrders.map(o => ({ date: o.date, items: o.items.map((i: any) => i.name) })))}. Use this history to suggest similar or complementary dishes if they ask for recommendations based on their history.` 
+    : "The user has no previous order history.";
 
   try {
     // Fix: Directly await ai.models.generateContent with model name and prompt
@@ -30,7 +36,9 @@ export const getShoppingAdvice = async (
         systemInstruction: `You are the Culinary Assistant for GONGURA FAMILY RESTAURANT MADHIRA. 
         You are friendly, food-loving, and knowledgeable about our authentic Hyderabadi menu.
         Our current menu includes: ${JSON.stringify(products)}.
+        ${orderContext}
         Answer questions about dishes, spice levels, or suggest combinations (like Biryani with Chicken 65).
+        If the user asks for a suggestion based on their previous order, analyze their history and recommend something they haven't tried or a variation of what they like.
         Keep responses mouth-watering and helpful. Mention our specialty Gongura dishes when appropriate.`,
         temperature: 0.7,
       }

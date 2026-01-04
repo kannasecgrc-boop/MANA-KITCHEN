@@ -300,7 +300,12 @@ export const App: React.FC = () => {
               <div className="relative z-10 max-w-7xl mx-auto px-12 text-white">
                 <h1 className="text-6xl md:text-8xl font-black mb-8 leading-none tracking-tighter uppercase">{storeSettings.heroTitle}</h1>
                 <p className="text-xl mb-12 opacity-80 max-w-2xl">{storeSettings.heroSubtitle}</p>
-                {/* View Menu Button Removed from here */}
+                <button 
+                  onClick={() => setView(View.SHOP)}
+                  className="px-10 py-5 bg-white text-gray-900 rounded-2xl font-black text-sm uppercase tracking-widest shadow-2xl hover:bg-brand hover:text-white transition-all hover:-translate-y-1"
+                >
+                  Order Now
+                </button>
               </div>
             </section>
 
@@ -414,7 +419,7 @@ export const App: React.FC = () => {
 
       <Footer settings={storeSettings} />
 
-      <AIChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} products={products} />
+      <AIChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} products={products} user={user} orders={orders} />
       <button onClick={() => setIsChatOpen(true)} className="fixed bottom-6 right-6 w-16 h-16 bg-brand text-white rounded-2xl flex items-center justify-center shadow-2xl z-50 hover:scale-110 transition-all">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></svg>
       </button>

@@ -1,15 +1,17 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChatMessage, Product } from '../types';
+import { ChatMessage, Product, User, Order } from '../types';
 import { getShoppingAdvice } from '../services/geminiService';
 
 interface AIChatProps {
   products: Product[];
   isOpen: boolean;
   onClose: () => void;
+  user: User | null;
+  orders: Order[];
 }
 
-const AIChat: React.FC<AIChatProps> = ({ products, isOpen, onClose }) => {
+const AIChat: React.FC<AIChatProps> = ({ products, isOpen, onClose, user, orders }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: 'model', content: "Namaste! I'm your Mana Kitchen Assistant. How can I help you pick the perfect meal today?" }
   ]);
@@ -23,15 +25,18 @@ const AIChat: React.FC<AIChatProps> = ({ products, isOpen, onClose }) => {
     }
   }, [messages, isLoading]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+  const handleSend = async (manualText?: string) => {
+    const userMsg = manualText || input.trim();
+    if (!userMsg || isLoading) return;
 
-    const userMsg = input.trim();
-    setInput('');
+    if (!manualText) setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
     setIsLoading(true);
 
-    const response = await getShoppingAdvice(userMsg, products, messages);
+    // Filter orders for the current user to pass to AI
+    const userOrders = user ? orders.filter(o => o.customerEmail === user.email) : [];
+
+    const response = await getShoppingAdvice(userMsg, products, messages, userOrders);
     setMessages(prev => [...prev, { role: 'model', content: response }]);
     setIsLoading(false);
   };
@@ -90,6 +95,19 @@ const AIChat: React.FC<AIChatProps> = ({ products, isOpen, onClose }) => {
           </div>
         )}
       </div>
+      
+      {/* Quick Actions for Logged In Users */}
+      {user && (
+        <div className="px-6 pb-2 bg-white/80 flex gap-2 overflow-x-auto scrollbar-hide">
+          <button 
+            onClick={() => handleSend("Based on my previous orders, what do you recommend I eat today?")}
+            className="whitespace-nowrap px-4 py-2 bg-brand/5 text-brand rounded-full text-[10px] font-black uppercase tracking-wider hover:bg-brand/10 transition-colors border border-brand/10 flex items-center gap-2"
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+            Suggestion from my previous order
+          </button>
+        </div>
+      )}
 
       {/* Input */}
       <div className="p-6 bg-white/80 border-t border-gray-100">
@@ -103,7 +121,7 @@ const AIChat: React.FC<AIChatProps> = ({ products, isOpen, onClose }) => {
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
           />
           <button 
-            onClick={handleSend}
+            onClick={() => handleSend()}
             disabled={isLoading}
             className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-gray-900 text-white rounded-xl hover:bg-brand transition-all disabled:opacity-50"
           >
