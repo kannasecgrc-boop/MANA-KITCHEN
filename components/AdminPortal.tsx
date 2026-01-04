@@ -250,6 +250,92 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
           </div>
         )}
 
+        {/* --- ORDER MANAGEMENT TAB (ADDED) --- */}
+        {activeTab === 'orders' && (
+          <div className="p-10">
+            <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tight mb-8">Order Workflows</h3>
+            <div className="overflow-x-auto rounded-[32px] border border-gray-100">
+              <table className="w-full text-left">
+                <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                  <tr>
+                    <th className="px-8 py-6">Order ID</th>
+                    <th className="px-8 py-6">Customer</th>
+                    <th className="px-8 py-6">Items Summary</th>
+                    <th className="px-8 py-6">Total Bill</th>
+                    <th className="px-8 py-6">Status</th>
+                    <th className="px-8 py-6 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {orders.length === 0 ? (
+                    <tr><td colSpan={6} className="p-20 text-center font-bold text-gray-400">No active orders found.</td></tr>
+                  ) : (
+                    orders.map(order => (
+                      <tr key={order.id} className={order.status === 'Pending' ? 'bg-orange-50/30' : ''}>
+                        <td className="px-8 py-6">
+                           <span className="font-black text-gray-900 text-sm">{order.id}</span>
+                           <p className="text-[9px] text-gray-400 font-bold mt-1">{new Date(order.date).toLocaleTimeString()}</p>
+                        </td>
+                        <td className="px-8 py-6">
+                           <p className="font-bold text-gray-900 text-sm">{order.customerName}</p>
+                           <p className="text-[10px] text-gray-500">{order.shippingAddress}</p>
+                           <p className="text-[9px] font-black text-brand uppercase tracking-wider mt-1">{order.paymentMethod}</p>
+                        </td>
+                        <td className="px-8 py-6">
+                           <div className="flex flex-col gap-1">
+                              {order.items.map((item, idx) => (
+                                 <span key={idx} className="text-xs text-gray-600">
+                                    <span className="font-black">{item.quantity}x</span> {item.name}
+                                 </span>
+                              ))}
+                           </div>
+                        </td>
+                        <td className="px-8 py-6">
+                           <span className="font-black text-lg text-gray-900">₹{order.total}</span>
+                        </td>
+                        <td className="px-8 py-6">
+                           <span className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest ${
+                              order.status === 'Pending' ? 'bg-orange-100 text-orange-600' :
+                              order.status === 'Accepted' ? 'bg-blue-100 text-blue-600' :
+                              order.status === 'Preparing' ? 'bg-purple-100 text-purple-600' :
+                              order.status === 'Out for Delivery' ? 'bg-yellow-100 text-yellow-600' :
+                              order.status === 'Delivered' ? 'bg-green-100 text-green-600' :
+                              'bg-gray-100 text-gray-400'
+                           }`}>
+                              {order.status}
+                           </span>
+                        </td>
+                        <td className="px-8 py-6 text-right">
+                           <div className="flex justify-end gap-2">
+                              {order.status === 'Pending' && (
+                                <>
+                                  <button onClick={() => onUpdateOrderStatus(order.id, 'Cancelled')} className="px-4 py-2 bg-white border border-gray-200 text-red-500 rounded-xl text-[9px] font-black uppercase hover:bg-red-50">Reject</button>
+                                  <button onClick={() => onUpdateOrderStatus(order.id, 'Accepted')} className="px-4 py-2 bg-green-500 text-white rounded-xl text-[9px] font-black uppercase hover:bg-green-600 shadow-lg">Accept</button>
+                                </>
+                              )}
+                              {order.status === 'Accepted' && (
+                                <button onClick={() => onUpdateOrderStatus(order.id, 'Preparing')} className="px-4 py-2 bg-brand text-white rounded-xl text-[9px] font-black uppercase hover:bg-gray-800 shadow-lg">Start Cooking</button>
+                              )}
+                              {order.status === 'Preparing' && (
+                                <button onClick={() => onUpdateOrderStatus(order.id, 'Out for Delivery')} className="px-4 py-2 bg-yellow-500 text-white rounded-xl text-[9px] font-black uppercase hover:bg-yellow-600 shadow-lg">Dispatch</button>
+                              )}
+                              {order.status === 'Out for Delivery' && (
+                                <button onClick={() => onUpdateOrderStatus(order.id, 'Delivered')} className="px-4 py-2 bg-green-600 text-white rounded-xl text-[9px] font-black uppercase hover:bg-green-700 shadow-lg">Mark Delivered</button>
+                              )}
+                              {(order.status === 'Delivered' || order.status === 'Cancelled') && (
+                                 <span className="text-[10px] font-bold text-gray-300 uppercase">Archived</span>
+                              )}
+                           </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'users' && (
           <div className="overflow-x-auto">
              <table className="w-full text-left">
