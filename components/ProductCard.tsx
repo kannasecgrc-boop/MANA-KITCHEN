@@ -6,9 +6,10 @@ interface ProductCardProps {
   product: Product;
   onViewDetails: (id: string) => void;
   onAddToCart: (product: Product) => void;
+  cartQuantity?: number;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails, onAddToCart }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails, onAddToCart, cartQuantity }) => {
   if (!product.isActive) return null; // Hide disabled items from customer menu
 
   const isOutOfStock = product.stock <= 0;
@@ -25,6 +26,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails, onAdd
           className={`w-full h-full object-cover transition-transform duration-700 ${isOutOfStock ? 'grayscale' : 'group-hover:scale-110'}`}
         />
         <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-10 transition-opacity" />
+        
+        {/* Cart Quantity Badge */}
+        {cartQuantity && cartQuantity > 0 && (
+          <div className="absolute top-4 right-4 bg-brand text-white text-[10px] font-black w-8 h-8 flex items-center justify-center rounded-full shadow-lg z-10 animate-in zoom-in ring-2 ring-white">
+            {cartQuantity}
+          </div>
+        )}
         
         <div className="absolute top-4 left-4 flex flex-col gap-2">
           {product.discountPercentage > 0 && !isOutOfStock && (

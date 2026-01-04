@@ -27,6 +27,9 @@ export const App: React.FC = () => {
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(true);
 
+  // Toast Notification State
+  const [toast, setToast] = useState<{ message: string; visible: boolean } | null>(null);
+
   const [products, setProducts] = useState<Product[]>(() => {
     const saved = localStorage.getItem('mana_restaurant_products');
     return saved ? JSON.parse(saved) : MOCK_PRODUCTS;
@@ -137,7 +140,13 @@ export const App: React.FC = () => {
       if (existing) return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
       return [...prev, { ...product, quantity: 1 }];
     });
-    setIsCartOpen(true);
+    // Removed automatic cart opening to allow browsing
+    setToast({ message: `Added ${product.name} to bag!`, visible: true });
+    setTimeout(() => setToast(null), 2500);
+  };
+
+  const getCartQty = (productId: string) => {
+    return cart.find(i => i.id === productId)?.quantity || 0;
   };
 
   const handleOrderComplete = (details: OrderDetails) => {
@@ -267,6 +276,18 @@ export const App: React.FC = () => {
         </div>
       )}
       
+      {/* Browsing Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[150] animate-in fade-in slide-in-from-bottom-4 zoom-in-95 pointer-events-none">
+          <div className="bg-gray-900/95 backdrop-blur-md text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 border border-gray-700/50">
+             <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+               <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7"/></svg>
+             </div>
+             <span className="text-[10px] font-black uppercase tracking-widest">{toast.message}</span>
+          </div>
+        </div>
+      )}
+
       <Header 
         currentView={currentView} 
         setView={setView} 
@@ -356,7 +377,13 @@ export const App: React.FC = () => {
                <h2 className="text-4xl font-black text-gray-900 tracking-tighter uppercase mb-12">{storeSettings.chefSectionTitle}</h2>
                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                   {products.filter(p => p.isActive).slice(0, 4).map(product => (
-                    <ProductCard key={product.id} product={product} onAddToCart={addToCart} onViewDetails={(id) => { setSelectedProductId(id); setView(View.PRODUCT_DETAILS); }} />
+                    <ProductCard 
+                        key={product.id} 
+                        product={product} 
+                        onAddToCart={addToCart} 
+                        cartQuantity={getCartQty(product.id)}
+                        onViewDetails={(id) => { setSelectedProductId(id); setView(View.PRODUCT_DETAILS); }} 
+                    />
                   ))}
                </div>
             </section>
@@ -380,7 +407,13 @@ export const App: React.FC = () => {
              </div>
              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                 {filteredProducts.map(product => (
-                  <ProductCard key={product.id} product={product} onAddToCart={addToCart} onViewDetails={(id) => { setSelectedProductId(id); setView(View.PRODUCT_DETAILS); }} />
+                  <ProductCard 
+                    key={product.id} 
+                    product={product} 
+                    onAddToCart={addToCart} 
+                    cartQuantity={getCartQty(product.id)}
+                    onViewDetails={(id) => { setSelectedProductId(id); setView(View.PRODUCT_DETAILS); }} 
+                  />
                 ))}
              </div>
           </div>
