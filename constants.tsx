@@ -13,7 +13,8 @@ export const MOCK_PRODUCTS: Product[] = [
     image: 'https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?auto=format&fit=crop&q=80&w=800',
     rating: 4.9,
     stock: 50,
-    isActive: true
+    isActive: true,
+    isRecommended: true
   },
   {
     id: 'food-2',
@@ -26,7 +27,8 @@ export const MOCK_PRODUCTS: Product[] = [
     image: 'https://images.unsplash.com/photo-1633945274405-b6c8069047b0?auto=format&fit=crop&q=80&w=800',
     rating: 5.0,
     stock: 30,
-    isActive: true
+    isActive: true,
+    isRecommended: true
   },
   {
     id: 'food-3',

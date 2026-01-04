@@ -49,7 +49,8 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
     discount: '',
     category: 'Biryanis',
     image: '',
-    stock: '50'
+    stock: '50',
+    isRecommended: false
   });
 
   // State for adding a new badge
@@ -125,7 +126,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   const openAddModal = () => {
     setEditingProductId(null);
     setProductForm({
-      name: '', description: '', price: '', mrp: '', discount: '', category: 'Biryanis', image: '', stock: '50'
+      name: '', description: '', price: '', mrp: '', discount: '', category: 'Biryanis', image: '', stock: '50', isRecommended: false
     });
     setIsProductModalOpen(true);
   };
@@ -140,7 +141,8 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
       discount: product.discountPercentage.toString(),
       category: product.category,
       image: product.image,
-      stock: product.stock.toString()
+      stock: product.stock.toString(),
+      isRecommended: product.isRecommended || false
     });
     setIsProductModalOpen(true);
   };
@@ -162,7 +164,8 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
       image: productForm.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=800',
       rating: 5.0,
       stock: parseInt(productForm.stock) || 0,
-      isActive: true
+      isActive: true,
+      isRecommended: productForm.isRecommended
     };
 
     if (editingProductId) {
@@ -452,6 +455,20 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                         <textarea value={productForm.description} onChange={e => setProductForm({...productForm, description: e.target.value})} className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 ring-brand outline-none font-bold h-24 resize-none" placeholder="Describe the taste and ingredients..." />
                       </div>
 
+                      <div className="flex items-center gap-3 p-4 bg-orange-50 rounded-2xl border border-orange-100">
+                        <input 
+                            type="checkbox" 
+                            id="isRecommended" 
+                            checked={productForm.isRecommended} 
+                            onChange={e => setProductForm({...productForm, isRecommended: e.target.checked})} 
+                            className="w-5 h-5 text-brand rounded focus:ring-brand border-gray-300 cursor-pointer" 
+                        />
+                        <label htmlFor="isRecommended" className="cursor-pointer">
+                            <p className="text-xs font-black text-gray-900 uppercase tracking-widest">Highlight in Chef's Recommendations</p>
+                            <p className="text-[10px] text-gray-500 font-bold">This item will appear in the main "Recommended" section on the home page.</p>
+                        </label>
+                      </div>
+
                       <div className="flex gap-4 pt-4">
                          <button type="button" onClick={() => setIsProductModalOpen(false)} className="flex-1 py-4 border-2 border-gray-100 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gray-50">Cancel</button>
                          <button type="submit" className="flex-[2] py-4 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-brand">{editingProductId ? 'Update Dish' : 'Add Dish'}</button>
@@ -477,7 +494,15 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                       <td className="px-10 py-6 flex items-center gap-4">
                         <img src={p.image} className={`w-14 h-14 rounded-2xl object-cover ${!p.isActive ? 'grayscale opacity-30' : ''}`} alt={p.name} />
                         <div>
-                          <p className={`font-black uppercase tracking-tight text-sm ${!p.isActive ? 'text-gray-400' : 'text-gray-900'}`}>{p.name}</p>
+                          <p className={`font-black uppercase tracking-tight text-sm ${!p.isActive ? 'text-gray-400' : 'text-gray-900'} flex items-center gap-2`}>
+                             {p.name}
+                             {p.isRecommended && (
+                                <span className="bg-orange-100 text-orange-600 text-[8px] px-2 py-0.5 rounded-full uppercase tracking-widest flex items-center gap-1">
+                                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                                    Chef's Rec
+                                </span>
+                             )}
+                          </p>
                           <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
                             {p.category} • ₹{p.price}
                             {p.discountPercentage > 0 && <span className="text-red-500 ml-1">(-{p.discountPercentage}%)</span>}

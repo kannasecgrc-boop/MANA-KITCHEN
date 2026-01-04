@@ -46,6 +46,7 @@ export interface Product {
   rating: number;
   stock: number;
   isActive: boolean;
+  isRecommended?: boolean;
 }
 
 export interface CartItem extends Product {

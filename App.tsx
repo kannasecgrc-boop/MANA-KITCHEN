@@ -186,6 +186,13 @@ export const App: React.FC = () => {
     return products.find(p => p.id === selectedProductId);
   }, [selectedProductId, products]);
 
+  // Logic for Chef's Recommendations: Prioritize marked items, else fallback to top 4 active
+  const chefRecommendations = useMemo(() => {
+    const recommended = products.filter(p => p.isActive && p.isRecommended);
+    if (recommended.length > 0) return recommended;
+    return products.filter(p => p.isActive).slice(0, 4);
+  }, [products]);
+
   // If Admin is logged in and NOT previewing, show Admin Portal
   if (isAdminLoggedIn && !isAdminPreviewing) {
     return (
@@ -331,7 +338,7 @@ export const App: React.FC = () => {
                {/* Dynamic Section Title */}
                <h2 className="text-4xl font-black text-gray-900 tracking-tighter uppercase mb-12">{storeSettings.chefSectionTitle}</h2>
                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                  {products.filter(p => p.isActive).slice(0, 4).map(product => (
+                  {chefRecommendations.map(product => (
                     <ProductCard 
                         key={product.id} 
                         product={product} 
