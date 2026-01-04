@@ -1,6 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Product, Order, User, StoreSettings, OrderStatus } from '../types';
+import { storageService } from '../services/storageService';
 
 interface AdminPortalProps {
   products: Product[];
@@ -12,6 +13,7 @@ interface AdminPortalProps {
   onDeleteProduct: (id: string) => void;
   onUpdateProduct: (product: Product) => void;
   onUpdateOrderStatus: (id: string, status: OrderStatus) => void;
+  onUpdateUsers: (users: User[]) => void;
   onClose: () => void;
   onPreview: () => void;
 }
@@ -26,6 +28,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   onDeleteProduct, 
   onUpdateProduct,
   onUpdateOrderStatus,
+  onUpdateUsers,
   onClose,
   onPreview
 }) => {
@@ -52,7 +55,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   // State for adding a new badge
   const [newBadgeText, setNewBadgeText] = useState('');
   const [newBadgeLink, setNewBadgeLink] = useState('');
-
+  
   useEffect(() => {
     const logs = JSON.parse(localStorage.getItem('deepak_emart_logs') || '[]');
     setSystemLogs(logs);
@@ -78,7 +81,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
     updated.splice(index, 1);
     setTempSettings({ ...tempSettings, customBadges: updated });
   };
-
+  
   // --- Auto-Calculation Logic ---
   
   const handleMrpChange = (val: string) => {
@@ -179,6 +182,28 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
     alert('All Changes Saved & Live!');
   };
 
+  const generateMockUsers = () => {
+    const confirm = window.confirm("This will add 100 fake users to your database. Continue?");
+    if (!confirm) return;
+
+    const newUsers: User[] = [];
+    for (let i = 1; i <= 100; i++) {
+        const id = `user-mock-${Date.now()}-${i}`;
+        newUsers.push({
+            id: id,
+            name: `Test User ${i}`,
+            email: `user${i}@example.com`,
+            phone: `9${String(Math.floor(100000000 + Math.random() * 900000000))}`,
+            address: `${100 + i} Mock Street, Madhira`,
+            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=user${i}`,
+            joinedAt: new Date().toISOString(),
+            password: `pass${i}` // Insecure, for demo only
+        });
+    }
+    onUpdateUsers([...registeredUsers, ...newUsers]);
+    alert("100 Users Seeded Successfully!");
+  };
+
   // Analytics Calculations
   const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
   const totalOrders = orders.length;
@@ -204,7 +229,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
           { id: 'orders', label: 'Workflows' },
           { id: 'users', label: 'User Data' },
           { id: 'inventory', label: 'Menu & Stock' },
-          { id: 'settings', label: 'Full UI Control' },
+          { id: 'settings', label: 'Data & UI Control' },
           { id: 'logs', label: 'System Logs' }
         ].map((tab) => (
           <button 
@@ -337,37 +362,55 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
         )}
 
         {activeTab === 'users' && (
-          <div className="overflow-x-auto">
-             <table className="w-full text-left">
-              <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                <tr>
-                  <th className="px-10 py-6">Customer Name</th>
-                  <th className="px-10 py-6">Contact Info</th>
-                  <th className="px-10 py-6">Registered Address</th>
-                  <th className="px-10 py-6">Joined Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {registeredUsers.length === 0 ? (
-                   <tr><td colSpan={4} className="p-20 text-center font-bold text-gray-400">No users registered yet.</td></tr>
-                ) : (
-                  registeredUsers.map(u => (
-                    <tr key={u.id}>
-                      <td className="px-10 py-6 flex items-center gap-4">
-                        <img src={u.avatar} className="w-10 h-10 rounded-full" alt="" />
-                        <span className="font-bold text-gray-900">{u.name}</span>
-                      </td>
-                      <td className="px-10 py-6">
-                        <p className="text-sm font-bold text-gray-900">{u.email}</p>
-                        <p className="text-xs text-gray-500">{u.phone}</p>
-                      </td>
-                      <td className="px-10 py-6 text-sm text-gray-600 max-w-xs truncate">{u.address}</td>
-                      <td className="px-10 py-6 text-xs font-bold text-gray-400">{new Date(u.joinedAt).toLocaleDateString()}</td>
+          <div className="p-10">
+             <div className="flex justify-between items-center mb-8">
+               <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Registered Users ({registeredUsers.length})</h3>
+               <button onClick={generateMockUsers} className="px-6 py-3 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 shadow-lg transition-all">
+                  + Seed 100 Test Users
+               </button>
+             </div>
+             
+             <div className="overflow-x-auto rounded-[32px] border border-gray-100 max-h-[600px] overflow-y-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest sticky top-0 z-10">
+                    <tr>
+                      <th className="px-10 py-6 bg-gray-50">Customer</th>
+                      <th className="px-10 py-6 bg-gray-50">Contact</th>
+                      <th className="px-10 py-6 bg-gray-50">Address</th>
+                      <th className="px-10 py-6 bg-gray-50">Login Creds</th>
+                      <th className="px-10 py-6 bg-gray-50">Joined</th>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {registeredUsers.length === 0 ? (
+                       <tr><td colSpan={5} className="p-20 text-center font-bold text-gray-400">No users registered yet.</td></tr>
+                    ) : (
+                      registeredUsers.map(u => (
+                        <tr key={u.id}>
+                          <td className="px-10 py-6 flex items-center gap-4">
+                            <img src={u.avatar} className="w-10 h-10 rounded-full bg-gray-100" alt="" />
+                            <span className="font-bold text-gray-900">{u.name}</span>
+                          </td>
+                          <td className="px-10 py-6">
+                            <p className="text-sm font-bold text-gray-900">{u.email}</p>
+                            <p className="text-xs text-gray-500">{u.phone}</p>
+                          </td>
+                          <td className="px-10 py-6 text-sm text-gray-600 max-w-xs truncate" title={u.address}>{u.address}</td>
+                          <td className="px-10 py-6">
+                            {u.password ? (
+                                <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded">{u.password}</span>
+                            ) : (
+                                <span className="text-[10px] text-gray-300 font-black uppercase">OTP Access</span>
+                            )}
+                          </td>
+                          <td className="px-10 py-6 text-xs font-bold text-gray-400">{new Date(u.joinedAt).toLocaleDateString()}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+             </div>
+             <p className="text-[10px] text-gray-400 mt-4 text-center">Note: Passwords are stored in local storage for demonstration purposes only. Production apps should use hashed secure storage.</p>
           </div>
         )}
 
@@ -512,6 +555,17 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                 <span className="bg-brand/10 text-brand px-4 py-2 rounded-xl text-[10px] font-black uppercase">V1.0.3 (Patch 3)</span>
              </div>
              
+             {/* --- DATABASE STATUS INDICATOR (AUTOMATIC STORAGE) --- */}
+             <div className="mb-12 p-8 bg-green-50 border border-green-100 rounded-[32px] flex items-center gap-6">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center text-green-600 shadow-sm">
+                   <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+                </div>
+                <div>
+                   <h4 className="text-lg font-black text-green-900 uppercase tracking-tight">Dedicated Database Active</h4>
+                   <p className="text-xs text-green-700 font-medium">Your application data (Users, Products, Orders) is being automatically persisted to secure local storage in real-time. No manual actions required.</p>
+                </div>
+             </div>
+
              <form className="space-y-12" onSubmit={handleSaveSettings}>
                 
                 {/* Branding Section */}

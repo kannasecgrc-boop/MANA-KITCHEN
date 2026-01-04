@@ -82,8 +82,11 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin, regis
       const foundUser = registeredUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
       
       if (foundUser) {
-        // In a real app, verify password hash here. 
-        // For mock, we check if password field is not empty (handled by required attribute) and user exists.
+        // Validate Password
+        if (foundUser.password && foundUser.password !== password) {
+          alert('Incorrect Password entered. Please try again.');
+          return;
+        }
         completeLogin(foundUser);
       } else {
         alert('Account not found with this email. Please Sign Up or check spelling.');
@@ -151,7 +154,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin, regis
         phone: phone,
         address: address,
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email || phone}`,
-        joinedAt: new Date().toISOString()
+        joinedAt: new Date().toISOString(),
+        // Save password if provided (Sign Up / Password Login flow)
+        password: (isSignUp || loginMethod === 'password') ? password : undefined 
       };
       onLogin(newUser, false);
     }

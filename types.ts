@@ -7,6 +7,7 @@ export interface User {
   address: string;
   avatar: string;
   joinedAt: string;
+  password?: string; // Added for data storage requirement
 }
 
 export interface StoreSettings {

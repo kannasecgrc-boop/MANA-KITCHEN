@@ -1,7 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { View, Product, CartItem, User, OrderDetails, Order, StoreSettings, OrderStatus } from './types';
-import { MOCK_PRODUCTS } from './constants';
 import Header from './components/Header';
 import ProductCard from './components/ProductCard';
 import ProductDetails from './components/ProductDetails';
@@ -13,6 +12,7 @@ import AdminPortal from './components/AdminPortal';
 import ProfileView from './components/ProfileView';
 import Footer from './components/Footer';
 import InstallPwaBanner from './components/InstallPwaBanner';
+import { storageService } from './services/storageService';
 
 export const App: React.FC = () => {
   const [currentView, setView] = useState<View>(View.HOME);
@@ -30,76 +30,29 @@ export const App: React.FC = () => {
   // Toast Notification State
   const [toast, setToast] = useState<{ message: string; visible: boolean } | null>(null);
 
-  const [products, setProducts] = useState<Product[]>(() => {
-    const saved = localStorage.getItem('mana_restaurant_products');
-    return saved ? JSON.parse(saved) : MOCK_PRODUCTS;
-  });
-
-  const [orders, setOrders] = useState<Order[]>(() => {
-    const saved = localStorage.getItem('mana_restaurant_orders');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [registeredUsers, setRegisteredUsers] = useState<User[]>(() => {
-    const saved = localStorage.getItem('mana_restaurant_users');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [storeSettings, setStoreSettings] = useState<StoreSettings>(() => {
-    const saved = localStorage.getItem('mana_restaurant_settings');
-    const defaultSettings: StoreSettings = {
-      storeName: 'MANA FAMILY RESTAURANT',
-      themeColor: '#8b0000',
-      heroTitle: 'Authentic Taste. Family Tradition.',
-      heroSubtitle: 'The finest Hyderabadi Dum Biryani and local Gongura specialties in Madhira.',
-      heroImage: 'https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?auto=format&fit=crop&q=80&w=1920',
-      chefSectionTitle: "Chef's Recommendations",
-      deliveryFee: 50,
-      supportEmail: 'kanna.secgrc@gmail.com',
-      supportPhone: '8919108717',
-      whatsappNumber: '8919108717',
-      officeAddress: 'Madhira, KVR Hospital Lane, Khammam District - 507203',
-      aboutUs: 'Authentic flavors and hygiene in Madhira.',
-      operatingHoursLunch: '11:00 AM - 04:00 PM',
-      operatingHoursDinner: '07:00 PM - 11:00 PM',
-      operatingDays: 'Open Every Day',
-      bannerHighlight: '⚡ Today\'s Special: Free Delivery on orders above ₹200!',
-      promoImage: '',
-      promoBackgroundColor: '',
-      promoTextColor: '#ffffff',
-      freeDeliveryThreshold: 200,
-      customBadges: [
-        { text: 'Get Directions', link: 'https://maps.google.com' },
-        { text: 'Book Party Hall', link: 'https://wa.me/918919108717' }
-      ]
-    };
-    
-    // Migration logic for old string-based badges
-    let loadedSettings = saved ? JSON.parse(saved) : defaultSettings;
-    if (loadedSettings.customBadges && loadedSettings.customBadges.length > 0 && typeof loadedSettings.customBadges[0] === 'string') {
-        loadedSettings.customBadges = defaultSettings.customBadges;
-    }
-    
-    return { ...defaultSettings, ...loadedSettings };
-  });
-
+  // --- DATA INITIALIZATION FROM STORAGE SERVICE ---
+  const [products, setProducts] = useState<Product[]>(storageService.loadProducts);
+  const [orders, setOrders] = useState<Order[]>(storageService.loadOrders);
+  const [registeredUsers, setRegisteredUsers] = useState<User[]>(storageService.loadUsers);
+  const [storeSettings, setStoreSettings] = useState<StoreSettings>(storageService.loadSettings);
+  
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('mana_current_user');
-    return saved ? JSON.parse(saved) : null;
-  });
+  
+  const [user, setUser] = useState<User | null>(storageService.loadCurrentUser);
+  
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState('All');
 
+  // --- PERSISTENCE EFFECT ---
   useEffect(() => {
-    localStorage.setItem('mana_restaurant_products', JSON.stringify(products));
-    localStorage.setItem('mana_restaurant_orders', JSON.stringify(orders));
-    localStorage.setItem('mana_restaurant_users', JSON.stringify(registeredUsers));
-    localStorage.setItem('mana_restaurant_settings', JSON.stringify(storeSettings));
-    localStorage.setItem('mana_current_user', JSON.stringify(user));
+    storageService.saveProducts(products);
+    storageService.saveOrders(orders);
+    storageService.saveUsers(registeredUsers);
+    storageService.saveSettings(storeSettings);
+    storageService.saveCurrentUser(user);
   }, [products, orders, registeredUsers, storeSettings, user]);
 
   // Handle PWA Install Prompt
@@ -212,7 +165,8 @@ export const App: React.FC = () => {
     } else {
       setUser(u);
       // Check if user exists, if not add to registered
-      if (!registeredUsers.find(ru => ru.email === u.email)) {
+      // For creating new users via the LoginModal (not Order flow), this runs
+      if (!registeredUsers.find(ru => ru.id === u.id)) {
         setRegisteredUsers(prev => [...prev, u]);
       }
     }
@@ -247,6 +201,7 @@ export const App: React.FC = () => {
           onDeleteProduct={id => setProducts(prev => prev.filter(p => p.id !== id))}
           onUpdateProduct={updateProduct}
           onUpdateOrderStatus={updateOrderStatus}
+          onUpdateUsers={(users) => setRegisteredUsers(users)}
           onClose={() => { setIsAdminLoggedIn(false); setView(View.HOME); }}
           onPreview={() => { setIsAdminPreviewing(true); setView(View.HOME); }}
         />
