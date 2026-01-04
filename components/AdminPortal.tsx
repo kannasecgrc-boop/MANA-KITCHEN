@@ -182,28 +182,6 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
     alert('All Changes Saved & Live!');
   };
 
-  const generateMockUsers = () => {
-    const confirm = window.confirm("This will add 100 fake users to your database. Continue?");
-    if (!confirm) return;
-
-    const newUsers: User[] = [];
-    for (let i = 1; i <= 100; i++) {
-        const id = `user-mock-${Date.now()}-${i}`;
-        newUsers.push({
-            id: id,
-            name: `Test User ${i}`,
-            email: `user${i}@example.com`,
-            phone: `9${String(Math.floor(100000000 + Math.random() * 900000000))}`,
-            address: `${100 + i} Mock Street, Madhira`,
-            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=user${i}`,
-            joinedAt: new Date().toISOString(),
-            password: `pass${i}` // Insecure, for demo only
-        });
-    }
-    onUpdateUsers([...registeredUsers, ...newUsers]);
-    alert("100 Users Seeded Successfully!");
-  };
-
   // Analytics Calculations
   const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
   const totalOrders = orders.length;
@@ -365,9 +343,6 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
           <div className="p-10">
              <div className="flex justify-between items-center mb-8">
                <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Registered Users ({registeredUsers.length})</h3>
-               <button onClick={generateMockUsers} className="px-6 py-3 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 shadow-lg transition-all">
-                  + Seed 100 Test Users
-               </button>
              </div>
              
              <div className="overflow-x-auto rounded-[32px] border border-gray-100 max-h-[600px] overflow-y-auto">
