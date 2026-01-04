@@ -7,9 +7,10 @@ interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLogin: (user: User, isAdmin: boolean) => void;
+  registeredUsers: User[];
 }
 
-const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => {
+const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin, registeredUsers }) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [loginMethod, setLoginMethod] = useState<'password' | 'otp'>('password');
@@ -48,10 +49,15 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
     e.preventDefault();
     const newErrors: {email?: string, phone?: string} = {};
     
-    if (loginMethod === 'password' || isSignUp || isAdminMode) {
+    // Validation based on mode
+    if ((loginMethod === 'password' || isSignUp || isAdminMode)) {
       if (!validateEmail(email)) newErrors.email = 'Valid email required';
     }
-    if (!isAdminMode && !validatePhone(phone)) newErrors.phone = 'Valid 10-digit mobile number required';
+    
+    // Phone validation only if NOT admin and (Using OTP or Signing Up)
+    if (!isAdminMode && (loginMethod === 'otp' || isSignUp)) {
+      if (!validatePhone(phone)) newErrors.phone = 'Valid 10-digit mobile number required';
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -71,10 +77,33 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
        return;
     }
 
+    // Password Login Flow (User exists check)
     if (loginMethod === 'password' && !isSignUp) {
-      completeLogin();
-    } else {
+      const foundUser = registeredUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+      
+      if (foundUser) {
+        // In a real app, verify password hash here. 
+        // For mock, we check if password field is not empty (handled by required attribute) and user exists.
+        completeLogin(foundUser);
+      } else {
+        alert('Account not found with this email. Please Sign Up or check spelling.');
+      }
+    } 
+    // Sign Up Flow
+    else if (isSignUp) {
+       // Check if already exists
+       const exists = registeredUsers.some(u => u.email === email || u.phone === phone);
+       if (exists) {
+         alert('User already registered! Please Login.');
+         setIsSignUp(false);
+         return;
+       }
+       completeLogin();
+    }
+    // OTP Login Flow
+    else {
       setIsProcessing(true);
+      // Check if phone exists (Optional for OTP flow, we can auto-create or error. Let's send OTP regardless for security/mock)
       const success = await sendSMS(phone, "Your Mana Family Restaurant verification code is 123456.");
       if (success) {
         addSystemLog('SMS', phone, 'DELIVERED (SIMULATED)');
@@ -110,16 +139,24 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
     setIsProcessing(false);
   };
 
-  const completeLogin = () => {
-    onLogin({
-      id: Math.random().toString(36).substr(2, 9),
-      name: name || email.split('@')[0] || 'Guest User',
-      email: email,
-      phone: phone,
-      address: address,
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email || phone}`,
-      joinedAt: new Date().toISOString()
-    }, false); // False for Normal User
+  const completeLogin = (existingUser?: User) => {
+    if (existingUser) {
+      onLogin(existingUser, false);
+    } else {
+      // Create new user (Sign Up or OTP guest)
+      const newUser: User = {
+        id: Math.random().toString(36).substr(2, 9),
+        name: name || (email ? email.split('@')[0] : `Guest-${phone}`),
+        email: email || `${phone}@mana.local`,
+        phone: phone,
+        address: address,
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email || phone}`,
+        joinedAt: new Date().toISOString()
+      };
+      onLogin(newUser, false);
+    }
+    
+    // Reset State
     setStep('details');
     setOtp(['', '', '', '', '', '']);
     onClose();
@@ -136,8 +173,13 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
   const handleVerify = (e: React.FormEvent) => {
     e.preventDefault();
     if (otp.join('').length < 6) return;
-    if (recoveryReason === 'recovery') setStep('reset-success');
-    else completeLogin();
+    if (recoveryReason === 'recovery') {
+       setStep('reset-success');
+    } else {
+       // Find user by phone for OTP login
+       const foundUser = registeredUsers.find(u => u.phone === phone);
+       completeLogin(foundUser);
+    }
   };
 
   return (
@@ -154,11 +196,12 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
               
               {!isSignUp && !isAdminMode && (
                 <div className="mt-6 flex p-1 bg-gray-100 rounded-2xl">
-                  {['password', 'otp'].map((m) => (
-                    <button key={m} onClick={() => setLoginMethod(m as any)} className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${loginMethod === m ? 'bg-white text-brand shadow-sm' : 'text-gray-400'}`}>
-                      {m === 'password' ? 'Password' : 'Mobile OTP'}
-                    </button>
-                  ))}
+                  <button onClick={() => setLoginMethod('password')} className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${loginMethod === 'password' ? 'bg-white text-brand shadow-sm' : 'text-gray-400'}`}>
+                    Password
+                  </button>
+                  <button onClick={() => setLoginMethod('otp')} className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${loginMethod === 'otp' ? 'bg-white text-brand shadow-sm' : 'text-gray-400'}`}>
+                    Mobile OTP
+                  </button>
                 </div>
               )}
             </div>
@@ -171,6 +214,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
                 </div>
               )}
               
+              {/* Email Input: Shown for Password Login, SignUp, Admin */}
               {(loginMethod === 'password' || isSignUp || isAdminMode) && (
                 <div>
                   <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Email / Login ID</label>
@@ -178,7 +222,8 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
                 </div>
               )}
 
-              {!isAdminMode && (
+              {/* Phone Input: Shown for OTP Login, SignUp. HIDDEN for Password Login */}
+              {(!isAdminMode && (loginMethod === 'otp' || isSignUp)) && (
                 <div>
                   <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Phone Number</label>
                   <div className="relative">
@@ -195,6 +240,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
                 </div>
               )}
 
+              {/* Password Input: Shown for Password Login, SignUp, Admin. HIDDEN for OTP Login */}
               {(loginMethod === 'password' || isSignUp || isAdminMode) && (
                 <div>
                   <div className="flex justify-between items-center mb-1.5 ml-1">
@@ -209,7 +255,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
                 {isProcessing ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
-                  isAdminMode ? 'Access Admin Portal' : isSignUp ? 'Send OTP' : loginMethod === 'password' ? 'Login' : 'Request OTP'
+                  isAdminMode ? 'Access Admin Portal' : isSignUp ? 'Sign Up Now' : loginMethod === 'password' ? 'Secure Login' : 'Get OTP'
                 )}
               </button>
             </form>
@@ -229,7 +275,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
           </div>
         ) : step === 'otp' ? (
           <div className="p-10 animate-in fade-in slide-in-from-right-4">
-            {/* OTP UI - Same as before */}
             <button onClick={() => setStep('details')} className="mb-6 flex items-center text-xs font-bold text-gray-400 uppercase tracking-widest hover:text-brand">
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg> Back
             </button>

@@ -147,10 +147,40 @@ export const App: React.FC = () => {
     // Apply Free Delivery Logic
     const finalShippingFee = subtotal >= (storeSettings.freeDeliveryThreshold || 0) ? 0 : baseFee;
     
+    // --- AUTO LOGIN / GUEST SESSION CREATION ---
+    // This ensures the user is logged in to view the order tracking profile immediately
+    let activeUser = user;
+    if (!activeUser) {
+        // Check if user already exists by Phone (details.zip holds phone) or Email
+        const existingUser = registeredUsers.find(u => 
+          (details.email && u.email === details.email) || 
+          (details.zip && u.phone === details.zip)
+        );
+
+        if (existingUser) {
+           activeUser = existingUser;
+           setUser(existingUser);
+        } else {
+           // Create a new Guest User Session
+           const newUser: User = {
+             id: `user-${Date.now()}`,
+             name: details.fullName,
+             email: details.email || `guest-${Date.now()}@mana.local`,
+             phone: details.zip, // Note: zip field used for Phone in CheckoutWorkflow
+             address: details.address,
+             avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${details.fullName}`,
+             joinedAt: new Date().toISOString()
+           };
+           setRegisteredUsers(prev => [...prev, newUser]);
+           activeUser = newUser;
+           setUser(newUser);
+        }
+    }
+
     const newOrder: Order = {
       id: `ORD-${Date.now().toString().slice(-6)}`,
       customerName: details.fullName,
-      customerEmail: user?.email || details.email || 'Guest',
+      customerEmail: activeUser.email, // Link order to the active user
       items: [...cart],
       subtotal: subtotal,
       shipping: finalShippingFee,
@@ -160,23 +190,10 @@ export const App: React.FC = () => {
       shippingAddress: `${details.address}, ${details.city}`,
       paymentMethod: details.paymentMethod
     };
+    
     setOrders(prev => [newOrder, ...prev]);
     setCart([]);
     setView(View.ORDER_SUCCESS);
-    
-    // Auto-register guest users if email provided
-    if (details.email && !registeredUsers.find(u => u.email === details.email)) {
-       const newUser: User = {
-         id: Date.now().toString(),
-         name: details.fullName,
-         email: details.email,
-         phone: details.zip, 
-         address: details.address,
-         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${details.email}`,
-         joinedAt: new Date().toISOString()
-       };
-       setRegisteredUsers(prev => [...prev, newUser]);
-    }
   };
 
   const handleLogin = (u: User, isAdmin: boolean) => {
@@ -416,7 +433,12 @@ export const App: React.FC = () => {
         onUpdateQty={(id, delta) => setCart(prev => prev.map(i => i.id === id ? {...i, quantity: Math.max(1, i.quantity + delta)} : i))} 
         onCheckout={() => { setIsCartOpen(false); setView(View.CHECKOUT); }} 
       />
-      <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} onLogin={handleLogin} />
+      <LoginModal 
+        isOpen={isLoginOpen} 
+        onClose={() => setIsLoginOpen(false)} 
+        onLogin={handleLogin} 
+        registeredUsers={registeredUsers}
+      />
       
       {/* PWA Install Banner - Only shows if browser prompts */}
       {showInstallBanner && installPrompt && (

@@ -83,11 +83,11 @@ const Header: React.FC<HeaderProps> = ({
           </button>
           
           {user ? (
-            <div className="flex items-center space-x-3 bg-gray-50 p-1 rounded-2xl border border-gray-100 cursor-pointer hover:bg-gray-100 transition-all" onClick={() => setView(View.PROFILE)}>
+            <div className="flex items-center space-x-3 bg-gray-50 p-1.5 rounded-2xl border border-gray-100 cursor-pointer hover:bg-gray-100 transition-all" onClick={() => setView(View.PROFILE)}>
               <img src={user.avatar} alt={user.name} className="w-8 h-8 md:w-9 md:h-9 rounded-xl object-cover shadow-sm" />
               <div className="hidden lg:block pr-3">
-                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Hello,</p>
-                <p className="text-xs font-black text-gray-900 leading-none">{user.name.split(' ')[0]}</p>
+                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Hello, {user.name.split(' ')[0]}</p>
+                <p className="text-xs font-black text-brand leading-none">My Orders</p>
               </div>
             </div>
           ) : (
